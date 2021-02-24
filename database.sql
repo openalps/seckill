@@ -1,18 +1,4 @@
-/*
- Navicat Premium Data Transfer
 
- Source Server         : mccode@离岛免税
- Source Server Type    : MySQL
- Source Server Version : 80020
- Source Host           : 8.129.22.68:3306
- Source Schema         : duty_free20201225
-
- Target Server Type    : MySQL
- Target Server Version : 80020
- File Encoding         : 65001
-
- Date: 24/02/2021 11:32:22
-*/
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -50,9 +36,6 @@ CREATE TABLE `seckill`  (
 -- ----------------------------
 -- Records of seckill
 -- ----------------------------
-INSERT INTO `seckill` VALUES (1, 'e6f708a383accc9fc4fbc548377522e5', '迎春-优惠券秒杀', '迎春-优惠券秒杀', 1, 1614009487, 1614134817, 1614076980, 1614131490, 1612969194, 1616549602, 0, 0, 11, 11, 89, '\\common\\services\\seckill\\SeckillService::insertCoupon', 'ee0149ede992859506d76a606874e7ac', 4, 1);
-INSERT INTO `seckill` VALUES (2, '0e05fd4b2f322d000b52b21069b2fa10', '红包', '红包', 1, 1614009487, 1614135442, 1614135433, 1614135439, 1612882791, 1616549602, 5, 5, 1000, 0, 2, '\\common\\services\\seckill\\SeckillService::insertRed', 'ee0149ede992859506d76a606874e7ac', 4, 1);
-INSERT INTO `seckill` VALUES (3, '2e963eb19f093a27d338c91302dee446', '200元处理异常订单', '', 1, 1614073370, 1614134827, 1614076974, 1614131487, 1614009600, 1614182400, 0, 0, 12, 12, 189, '\\common\\services\\seckill\\SeckillService::insertRed', 'ee0149ede992859506d76a606874e7ac', 4, 1);
 INSERT INTO `seckill` VALUES (4, 'a7979ac10d31bec6051b154bb3a647e3', '元宵红包秒杀', '例子', 2, 1614135799, 1614136288, 1614136288, 1614136284, 1614096000, 1614355200, 2, 2, 100, 2, 6, '\\common\\services\\seckill\\call\\ExampleService::run', 'ee0149ede992859506d76a606874e7ac', 4, 0);
 
 -- ----------------------------
@@ -101,15 +84,6 @@ CREATE TABLE `seckill_request`  (
 -- ----------------------------
 -- Records of seckill_request
 -- ----------------------------
-INSERT INTO `seckill_request` VALUES (33459, '0e05fd4b2f322d000b52b21069b2fa10', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614134958650, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33460, '0e05fd4b2f322d000b52b21069b2fa10', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614134977459, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33461, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 2, 1, 1614135843871, 1, 67638643, 0);
-INSERT INTO `seckill_request` VALUES (33462, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614136030423, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33463, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614136062199, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33464, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614136062370, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33465, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614136062690, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33466, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614136063100, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33467, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 1, -1, 1614136063525, 1, 67638643, 1005);
-INSERT INTO `seckill_request` VALUES (33468, 'a7979ac10d31bec6051b154bb3a647e3', 'ee0149ede992859506d76a606874e7ac', 2, 2, 1614136106325, 1, 67638643, 0);
+
 
 SET FOREIGN_KEY_CHECKS = 1;
