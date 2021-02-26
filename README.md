@@ -1,5 +1,5 @@
 # seckill
-秒杀系统
+基于yii2 redis 秒杀系统
 
 1.data/database.sql   //数据表
 use common\models\seckill\Seckill;//秒杀活动表
