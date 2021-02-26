@@ -1,5 +1,4 @@
 
-
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
@@ -10,6 +9,7 @@ DROP TABLE IF EXISTS `seckill`;
 CREATE TABLE `seckill`  (
   `id` int(0) NOT NULL AUTO_INCREMENT,
   `seckill_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '',
+  `related_activity_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '关联活动代码',
   `name` varchar(30) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '名称',
   `note` varchar(200) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '备注',
   `status_val` tinyint(1) NOT NULL COMMENT '状态',
@@ -28,15 +28,12 @@ CREATE TABLE `seckill`  (
   `group_code` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '分组',
   `admin_id` int(0) UNSIGNED NOT NULL DEFAULT 0 COMMENT '管理员ID',
   `del_flag` tinyint(0) UNSIGNED NOT NULL DEFAULT 0 COMMENT '删除标识',
+  `tip_success_text` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '成功文案',
+  `tip_unstock_text` varchar(100) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '' COMMENT '领完文案',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `seckill_code`(`seckill_code`) USING BTREE,
   INDEX `group_code`(`group_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of seckill
--- ----------------------------
-INSERT INTO `seckill` VALUES (4, 'a7979ac10d31bec6051b154bb3a647e3', '元宵红包秒杀', '例子', 2, 1614135799, 1614136288, 1614136288, 1614136284, 1614096000, 1614355200, 2, 2, 100, 2, 6, '\\common\\services\\seckill\\call\\ExampleService::run', 'ee0149ede992859506d76a606874e7ac', 4, 0);
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for seckill_group
@@ -54,12 +51,7 @@ CREATE TABLE `seckill_group`  (
   `admin_id` int(0) UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `code`(`group_code`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of seckill_group
--- ----------------------------
-INSERT INTO `seckill_group` VALUES (1, 'ee0149ede992859506d76a606874e7ac', '元宵抢券活动', '元宵抢券活动', 0, 0, 1613986072, 1614076917, 4);
+) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for seckill_request
@@ -79,11 +71,6 @@ CREATE TABLE `seckill_request`  (
   INDEX `code`(`seckill_code`) USING BTREE,
   INDEX `group_code`(`group_code`) USING BTREE,
   INDEX `status`(`status`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 31890 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of seckill_request
--- ----------------------------
-
+) ENGINE = InnoDB AUTO_INCREMENT = 35224 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;
