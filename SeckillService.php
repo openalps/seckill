@@ -85,7 +85,7 @@ class SeckillService
 	       	   return join(':',[
 	       	   	  'receive',
 	       	   	  'group',
-	       	   	  $seckillcode,
+	       	   	  $groupcode,
 	       	   	  $userid
 	       	   ]);
        }
@@ -152,6 +152,8 @@ class SeckillService
 	    	            	throw new \Exception("该活动已停止!", 1004);
 	    	            }
 
+	    	           
+
 	    	            // 每人限领取次数
 	    	            if(  (int)$seckill['per_user_limit']>0 
 	    	            	&& self::getUserReceiveTimesFromCache( $seckillcode, $userid )>=(int)$seckill['per_user_limit']  )
@@ -197,6 +199,7 @@ class SeckillService
 	    	            		"次,您已经领过啦!"
 	    	            	]), 1008);
 	    	            }
+	    	          
 	    	            //库存队列key
 	    	            $stock_queue_mkey = self::buildStockQueueMkey( $seckillcode );
 	    	          
@@ -208,26 +211,26 @@ class SeckillService
 	    	            	if(  (int)$seckill['per_user_limit']>0 )
 	    	            	{
 	    	            		$per_user_mkey = self::buildReceiveMkey( $seckillcode, $userid );
-	    	            		$redisIns->incr($per_user_mkey);
+	    	            		self::incr($per_user_mkey);
 	    	            	}
 
 	    	            	//每人分组下限领取次数
 	    	            	if( (int)$seckill['per_user_group_limit']>0 )
 	    	            	{
 	    	            		$per_user_group_mkey = self::buildReceiveGroupMkey( $seckill['group_code'], $userid );
-	    	            		$redisIns->incr($per_user_group_mkey);
+	    	            		self::incr($per_user_group_mkey);
 	    	            	}
 	    	            	//每人每天限领次数
 	    	            	if ( (int)$seckill['per_user_day_limit']>0 ) 
 	    	            	{
 	    	            		$per_user_day_mkey = self::buildReceiveDayMkey( $seckillcode,$userid, date('Ymd') );
-	    	            		$redisIns->incr($per_user_day_mkey);
+	    	            		self::incr($per_user_day_mkey);
 	    	            	}
 	    	            	//每人每天分组下限领
 	    	            	if ( (int)$seckill['per_user_day_group_limit']>0 ) 
 	    	            	{
 	    	            		$per_user_day_group_mkey = self::buildReceiveDayGroupMkey($seckill['group_code'],$userid, date('Ymd'));
-	    	            		$redisIns->incr($per_user_day_group_mkey);
+	    	            		self::incr($per_user_day_group_mkey);
 	    	            	}
 	    	            	
 	    	            	// 保存到消费者队列
@@ -239,10 +242,10 @@ class SeckillService
 	    	            		'code'=>0,
 	    	            		'user_id'=>$userid
 	    	            	]));
-	    	            	return [0,'秒杀成功'];
+	    	            	return [0, $seckill['tip_success_text']??'恭喜，领取成功'];
 	    	            }
 
-	    	            throw new \Exception("已经被领完啦!", 1009);
+	    	            throw new \Exception($seckill['tip_unstock_text']??"手速慢，已经被领完啦!", 1009);
 
 	   		    } catch (\Exception $e) 
 	   		    {
@@ -349,6 +352,20 @@ class SeckillService
 		   	  return json_decode($data,true);
 	   }
 	   /**
+	    * 自增
+	    * @param  [type] $mkey [description]
+	    * @return [type]       [description]
+	    */
+	   public static function incr( $mkey )
+	   {
+	   	    $value = self::getRedisCache($mkey);
+	   	    if( empty($value) )
+	   	    {
+	   	       return self::setRedisCahce($mkey,1);
+	   	    }
+	   		return self::getRedisIns()->incr($mkey);
+	   }
+	   /**
 	    * 获取缓存
 	    * @param  [type] $mkey [description]
 	    * @return [type]       [description]
@@ -402,8 +419,12 @@ class SeckillService
 	   {
 		   while (true) {
 			   	   $seckills = self::getAllSeckill();
-				   	foreach ($seckills as $seckillcode => $consumer) 
+				   	foreach ($seckills as $seckillcode => $value) 
 				   	{
+
+				   		   $consumer = $value['consumer'];
+				   		   $related_activity_code = $value['related_activity_code'];
+
 				   	   	   self::$request_data = array(
 				   	   	   	  $seckillcode=>array()
 				   	   	   );
@@ -418,6 +439,7 @@ class SeckillService
 				   	   	   	    {
 				   	   	   	    	    LogService::log("/seckill/consumer",'INFO','INFO',[
 				   	   	   	    	    	'data'=>$data,
+				   	   	   	    	    	'seckillvalue'=>$value,
 				   	   	   	    	    	'seckillcode'=>$seckillcode
 				   	   	   	    	    ]);
 						   	   	   	    $data = json_decode($data,true);
@@ -435,7 +457,14 @@ class SeckillService
 						   	   	   	    if( count( self::$request_data[$seckillcode] )>=200 )
 						   	   	   	    {
 						   	   	   	    	self::insertRequest( self::$request_data[$seckillcode] );
-						   	   	   	    	$className::$funName( self::$request_data[$seckillcode] );
+   	    	   	    	   	   	   	    	if( !empty( self::getRequestSuccessRows(self::$request_data[$seckillcode]) ) )
+   	    	   	    	   	   	   	    	{
+   	    		   	    	   	   	   	    	$className::$funName( array(
+   	    		   	    	   	   	   	    		'rows'=>self::getRequestSuccessRows(self::$request_data[$seckillcode]),
+   	    		   	    	   	   	   	    		'related_activity_code'=>$related_activity_code,
+   	    		   	    	   	   	   	    		'seckillcode'=>$seckillcode
+   	    		   	    	   	   	   	    	));
+   	    	   	    	   	   	   	    	}
 						   	   	   	    	self::$request_data[$seckillcode] = array();
 						   	   	   	    }
 						   	   	   	   
@@ -444,7 +473,14 @@ class SeckillService
 	   	       	   	   	    	if( !empty(self::$request_data[$seckillcode]) )
 	   	       	   	   	    	{
 	   	    	   	   	   	    	self::insertRequest( self::$request_data[$seckillcode] );
-	   	    	   	   	   	    	$className::$funName( self::$request_data[$seckillcode] );
+	   	    	   	   	   	    	if( !empty( self::getRequestSuccessRows(self::$request_data[$seckillcode]) ) )
+	   	    	   	   	   	    	{
+		   	    	   	   	   	    	$className::$funName( array(
+		   	    	   	   	   	    		'rows'=>self::getRequestSuccessRows(self::$request_data[$seckillcode]),
+		   	    	   	   	   	    		'related_activity_code'=>$related_activity_code,
+		   	    	   	   	   	    		'seckillcode'=>$seckillcode
+		   	    	   	   	   	    	));
+	   	    	   	   	   	    	}
 	   	       	   	   	    	}
 	   	       	   	   	    	self::$request_data[$seckillcode] = array();
 
@@ -458,6 +494,21 @@ class SeckillService
 		   	   	   sleep(2);
 		   	   	   continue ;
 	   	   }
+	   }
+	   /**
+	    * 过滤成功的记录
+	    * @return [type] [description]
+	    */
+	   public static function getRequestSuccessRows( $rows )
+	   {
+	   	   $data = array();
+	   	   foreach ($rows as $key => $value) {
+	   	   	  if( $value['status']==SeckillRequest::STATUS_SUCCESS )
+	   	   	  {
+	   	   	  	  $data[] = $value;
+	   	   	  }
+	   	   }
+	   	   return $data;
 	   }
 	   /**
 	    * 请求
@@ -537,46 +588,68 @@ class SeckillService
 	   }
 
 
-	   /**
-	    * 
-	    * @param  array  $aParams 
-	    * @return [type]          
-	    */
-	   public static function save( $aParams=array() )
-	   {
+		   /**
+		    * 
+		    * @param  array  $aParams 
+		    * @return [type]          
+		    */
+		   public static function save( $aParams=array() )
+		   {
 
-		   	   
-		   	   if( !empty($aParams['id']) )
-	   	   	   {
-	   		   	   $Seckill = Seckill::findOne( $aParams['id'] );
-	   	   	   }else
-	   	   	   {
-	   	   	   	   $Seckill = new Seckill();
-	   	   	   	   $Seckill->create_time = time();
-	   	   	   	   $Seckill->seckill_code = md5(uniqid());
-	   	   	   	   $Seckill->status_val = Seckill::STATUS_VAL_STOPED;
-	   	   	   }
-		   	   $Seckill->name = $aParams['name'];
-		   	   $Seckill->note = $aParams['note'];
-		   	   $Seckill->group_code = $aParams['group_code'];
-		   	   $Seckill->start_time = $aParams['start_time'];	
-		   	   $Seckill->end_time = $aParams['end_time'];	
-		   	   $Seckill->limit_count = $aParams['limit_count'];
-		   	   $Seckill->per_user_limit = $aParams['per_user_limit'];	
-		   	   $Seckill->per_user_day_limit = $aParams['per_user_day_limit'];	
-		   	   $Seckill->consumer = $aParams['consumer'];	
-		   	   $Seckill->admin_id = $aParams['admin_id'];	
-		   	   $Seckill->update_time = time();
-		   	   $res = $Seckill->save();
-		   	   if( empty($res) )
-		   	   {
-		   	   	  return [100002,'保存失败',''];
-		   	   }
+			   	   
+			   	   if( !empty($aParams['id']) )
+		   	   	   {
+		   		   	   $Seckill = Seckill::findOne( $aParams['id'] );
+		   	   	   }else
+		   	   	   {
+		   	   	   	   $Seckill = new Seckill();
+		   	   	   	   $Seckill->create_time = time();
+		   	   	   	   $Seckill->seckill_code = 'S'.date('YmdHis');
+		   	   	   	   $Seckill->status_val = Seckill::STATUS_VAL_STOPED;
+		   	   	   }
+			   	   $Seckill->name = $aParams['name'];
+			   	   $Seckill->note = $aParams['note'];
+			   	   $Seckill->group_code = $aParams['group_code'];
+			   	   $Seckill->start_time = $aParams['start_time'];	
+			   	   $Seckill->end_time = $aParams['end_time'];	
+			   	   $Seckill->limit_count = $aParams['limit_count'];
+			   	   $Seckill->tip_success_text = $aParams['tip_success_text'];
+			   	   $Seckill->tip_unstock_text = $aParams['tip_unstock_text'];
+			   	   $Seckill->per_user_limit = $aParams['per_user_limit'];	
+			   	   $Seckill->per_user_day_limit = $aParams['per_user_day_limit'];	
+			   	   $Seckill->related_activity_code = $aParams['related_activity_code'];	
+			   	   $Seckill->consumer = $aParams['consumer'];	
+			   	   $Seckill->admin_id = $aParams['admin_id'];	
+			   	   $Seckill->update_time = time();
+			   	   $res = $Seckill->save();
+			   	   if( empty($res) )
+			   	   {
+			   	   	  return [100002,'保存失败',''];
+			   	   }
 
-		   	   self::clearSeckill( $Seckill->seckill_code );
+			   	   self::clearSeckill( $Seckill->seckill_code );
 
-		   	   return [0,'保存成功'];
-	   }
+			   	   return [0,'保存成功'];
+		   }
+		   /**
+		    * 复制秒杀活动
+		    * @param  [type] $seckillcode [description]
+		    * @return [type]              [description]
+		    */
+		   public static function copySeckill( $seckillId )
+		   {
+			   	  $seckillIns = Seckill::findOne($seckillId);
+			   	  if( empty($seckillIns) )
+			   	  {
+			   	  	 return [100002,'秒杀不存在'];
+			   	  }
+			   	  $seckill_data = $seckillIns->toArray();
+			   	  $seckill_data['name'] = $seckill_data['name'].'_复制';
+			   	  unset($seckill_data['id']);
+			   	  list($code,$message) = self::save( $seckill_data );
+			   	  $message = $code==0?'复制秒杀活动成功':'复制秒杀活动失败';
+			   	  return [$code,$message];
+		   }
 	      /**
 	       * 
 	       * @param  array  $aParams 
@@ -592,7 +665,7 @@ class SeckillService
 	   	   	   {
 	   	   	   	   $SeckillGroup = new SeckillGroup();
 	   	   	   	   $SeckillGroup->create_time = time();
-	   	   	   	   $SeckillGroup->group_code = md5(uniqid());
+	   	   	   	   $SeckillGroup->group_code = 'G'.date('YmdHis');
 	   	   	   }
 	   	   	   $SeckillGroup->name = $aParams['name'];
 	   	   	   $SeckillGroup->note = $aParams['note'];
@@ -629,7 +702,8 @@ class SeckillService
 
       	   	   $seckill_count = Seckill::find()
       	   	   ->where([
-      	   	   	  'group_code'=>$SeckillGroup->group_code
+      	   	   	  'group_code'=>$SeckillGroup->group_code,
+      	   	   	  'del_flag'=>0
       	   	   ])->count();
       	   	   if( !empty($seckill_count) )
       	   	   {
@@ -919,7 +993,10 @@ class SeckillService
 
    	   	   // 状态运行中的活动到缓存，以便消费者使用
    	   	   $seckills = self::getAllSeckill();
-   	   	   $seckills[ $seckillcode ] = $SeckillIns->consumer;
+   	   	   $seckills[ $seckillcode ] = array(
+   	   	   	  'consumer'=>$SeckillIns->consumer,
+   	   	   	  'related_activity_code'=>$SeckillIns->related_activity_code
+   	   	   );
    	   	   self::setRedisCahce( self::buildAllSeckillMkey(), json_encode($seckills) );
 
    	   	   // 获取用户领取次数
@@ -930,6 +1007,8 @@ class SeckillService
    	   	   self::setUserReceiveTimesDayToCache( $seckillcode );
    	   	   //获取用户当天分组下领取次数
    	   	   self::setUserReceiveGroupTimesDayToCache( $SeckillIns->group_code );
+   	   	   // 更新数据
+   	   	   self::updateSeckillSuccessCount( $seckillcode );
 
 
    	   	   return [0,'启动活动成功'];
@@ -973,14 +1052,16 @@ class SeckillService
 		   	  unset($seckills[ $seckillcode ]);
 		   	  self::setRedisCahce( self::buildAllSeckillMkey(), json_encode($seckills) );
 
-		   	  // 获取用户领取次数
+		   	  // 删除：获取用户领取次数
 		   	  self::setUserReceiveTimesToCahce( $seckillcode, true );
-		   	  //获取用户在分组下领取次数
+		   	  //删除：获取用户在分组下领取次数
 		   	  self::setUserReceiveGroupTimesToCache( $SeckillIns->group_code, true );
-		   	  //获取用户当天领取次数
+		   	  //删除：获取用户当天领取次数
 		   	  self::setUserReceiveTimesDayToCache( $seckillcode, true );
-		   	  //获取用户当天分组下领取次数
+		   	  //删除：获取用户当天分组下领取次数
 		   	  self::setUserReceiveGroupTimesDayToCache( $SeckillIns->group_code, true );
+		   	  // 更新数据
+		   	  self::updateSeckillSuccessCount( $seckillcode );
 
 		   	  return [0,'停止活动成功'];
 	   }
